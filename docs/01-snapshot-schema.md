@@ -2,7 +2,7 @@
 
 Detail on [§4 of the README](../README.md#4-append-only-snapshots).
 
-Schema is illustrative — a generalised version of the pattern, not any client's actual DDL.
+Schema is illustrative: a generalised version of the pattern, not any client's actual DDL.
 
 ---
 
@@ -10,7 +10,7 @@ Schema is illustrative — a generalised version of the pattern, not any client'
 
 ```sql
 -- ─────────────────────────────────────────────────────────────
--- 1. ENTITIES — mutable current state. A materialised view.
+-- 1. ENTITIES. Mutable current state. A materialised view.
 --    Rebuildable from snapshots at any time.
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE entities (
@@ -44,7 +44,7 @@ CREATE INDEX ON entities (name_normalised, location_normalised);  -- identity ma
 
 
 -- ─────────────────────────────────────────────────────────────
--- 2. PRESENCE_SNAPSHOTS — append-only. One row per entity per scan.
+-- 2. PRESENCE_SNAPSHOTS. Append-only. One row per entity per scan.
 --    Never updated. Never deleted (until retention rollup).
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE presence_snapshots (
@@ -71,7 +71,7 @@ CREATE INDEX ON presence_snapshots (observed_at);   -- partition key candidate
 
 
 -- ─────────────────────────────────────────────────────────────
--- 3. STATE_CHANGE_EVENTS — append-only. Confirmed events only.
+-- 3. STATE_CHANGE_EVENTS. Append-only. Confirmed events only.
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE state_change_events (
     event_id            uuid PRIMARY KEY,
@@ -100,7 +100,7 @@ CREATE TABLE state_change_events (
 
 
 -- ─────────────────────────────────────────────────────────────
--- 4. SCAN_RUNS — coverage receipts. Answers "did we actually check?"
+-- 4. SCAN_RUNS. Coverage receipts. Answers "did we actually check?"
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE scan_runs (
     scan_run_id     uuid PRIMARY KEY,
@@ -127,9 +127,9 @@ CREATE TABLE scan_runs (
 
 Collapsing this to a boolean is the most common and most damaging simplification in this class of system. The four states have completely different meanings:
 
-- `absent` — we checked, it wasn't there
-- `error` — we couldn't determine anything
-- `not_applicable` — this entity doesn't exist on this source and never did
+- `absent`: we checked, it wasn't there
+- `error`: we couldn't determine anything
+- `not_applicable`: this entity doesn't exist on this source and never did
 
 Mapping `error` to `absent` manufactures false positives directly. Mapping `not_applicable` to `absent` poisons corroboration logic, because "not found on a platform it was never on" gets counted as evidence of change.
 
@@ -143,11 +143,11 @@ Deliberate denormalisation. Tier assignment changes over time; when analysing hi
 
 ### `raw_response_hash`
 
-Two purposes. It detects identical consecutive responses cheaply (useful for spotting cached or stale upstream data), and when a platform layout change breaks extraction, hash clustering shows immediately that responses stopped varying — a strong signal that you're parsing a static error page rather than real data.
+Two purposes. It detects identical consecutive responses cheaply, which is useful for spotting cached or stale upstream data. And when a platform layout change breaks extraction, hash clustering shows immediately that responses stopped varying, a strong signal that you're parsing a static error page rather than real data.
 
 ### `idempotency_key` on events
 
-Format: `{entity_id}:{signal_type}:{detection_window}`, where `detection_window` is a truncated timestamp (e.g. the hour or day the signal was first raised).
+Format: `{entity_id}:{signal_type}:{detection_window}`, where `detection_window` is a truncated timestamp such as the hour or day the signal was first raised.
 
 Backfill and replay are normal operations on an append-only system. Without an idempotency key, re-processing a period emits duplicate events downstream. The unique constraint makes replay safe by construction rather than by careful operator behaviour.
 
@@ -230,6 +230,6 @@ Storage grows as `entities × scans_per_day × retention_days`. Manage it withou
 (entity, source, observation, first_at, last_at, count)
 ```
 
-For stable entities — the large majority — this is a massive reduction while preserving the ability to answer "what state was this in on date X."
+For stable entities, which are the large majority, this is a massive reduction while preserving the ability to answer "what state was this in on date X."
 
 **Never roll up around events.** Retain full per-scan granularity for a window either side of any `state_change_event`. That's exactly the data you need when auditing why an event fired, and it's a tiny fraction of total volume.
