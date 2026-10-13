@@ -76,7 +76,7 @@ Absence in a single read has at least six causes, and only one of them is the ev
 
 Cause 6 is the nastiest. The entity is fine, but your key no longer resolves. A naive differ reports a change with total confidence, and no amount of retrying the same key will correct it.
 
-Treating a single negative read as truth means your event stream is mostly noise. Measured against manual verification, single-read detection produced a false positive rate high enough to make the output unusable for any automated downstream action.
+Treating a single negative read as truth means your event stream is mostly noise. Measure single-read detection against manual verification before trusting it: the false positive rate can easily be high enough to make the output unusable for any automated downstream action.
 
 ---
 
@@ -214,9 +214,9 @@ Re-check frequency is a **capacity decision constrained by rate limits**, not a 
 
 ### The failure this creates
 
-Documented cadence and actual cadence diverge. Downstream logic assumes the documented figure. Nobody notices until someone asks why a change took five days to surface and the answer contradicts the specification.
+Documented cadence and actual cadence diverge. Downstream logic assumes the documented figure. Nobody notices until someone asks why a change took longer to surface than the specification says it should.
 
-### Rules that prevented it
+### Rules that prevent it
 
 **Cadence is derived, not declared.** Compute it: `available_request_budget / entity_count`, adjusted per tier. If the result doesn't meet the business requirement, that's a capacity conversation, not a documentation exercise.
 
@@ -306,15 +306,15 @@ A hard cap, both absolute and as a proportion of the tracked set, that halts the
 
 ## 11. What I'd do differently
 
-**Build the append-only schema first.** It was introduced after the mutating version, and the migration cost real effort while permanently losing the earlier history. Nothing else is fully debuggable without it.
+**Build the append-only schema first.** Adding it after a mutating version means a migration, and any history the mutating version overwrote is gone for good. Nothing else is fully debuggable without it.
 
-**Instrument false positive rate from day one.** For a long stretch the detector's precision was a matter of opinion. It should have been a dashboard from the first week, because you cannot improve what you haven't measured, and you can't argue about it productively either.
+**Instrument false positive rate from day one.** Until it is measured, a detector's precision is a matter of opinion. It belongs on a dashboard from the first week, because you cannot improve what you haven't measured, and you can't argue about it productively either.
 
-**Derive cadence from capacity at design time.** Specifying it as a business requirement and discovering the constraint later produced a documentation/reality gap that took a while to fully close.
+**Derive cadence from capacity at design time.** Specifying it as a business requirement and discovering the constraint later opens a gap between documentation and reality that is slow to close.
 
-**Separate detection from enrichment earlier.** They were entangled initially, which meant slow registry checks throttled the fast detection loop. Splitting them was straightforward and should have been the starting shape.
+**Separate detection from enrichment from the start.** When they are entangled, slow registry checks throttle the fast detection loop. Splitting them is straightforward and should be the starting shape.
 
-**Treat identity resolution as a first-class subsystem.** It was handled incrementally as problems appeared. It deserved a design.
+**Treat identity resolution as a first-class subsystem.** Handling it incrementally, as problems appear, leaves it without a coherent design. It deserves one.
 
 ---
 

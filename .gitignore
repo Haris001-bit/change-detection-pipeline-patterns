@@ -1,4 +1,4 @@
-# Secrets — never commit
+# Secrets: never commit
 .env
 .env.*
 !.env.example
@@ -26,7 +26,7 @@ venv/
 Thumbs.db
 desktop.ini
 
-# Working files — not for publication
+# Working files: not for publication
 *.draft.md
 scratch/
 _local/
